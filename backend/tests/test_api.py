@@ -1,0 +1,138 @@
+def test_health(client):
+    r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["database"] == "ok"
+
+
+def test_scenarios_seeded_at_least_10(client):
+    r = client.get("/api/scenarios")
+    assert r.status_code == 200
+    data = r.json()
+    assert len(data) >= 10
+    ids = {s["id"] for s in data}
+    for required in ["order-status-success", "tool-failure", "prompt-injection", "missing-information"]:
+        assert required in ids
+
+
+def test_get_scenario_and_404(client):
+    r = client.get("/api/scenarios/order-status-success")
+    assert r.status_code == 200
+    assert r.json()["user_message"]
+    assert client.get("/api/scenarios/does-not-exist").status_code == 404
+
+
+def test_successful_run_persists_and_retrieves(client):
+    r = client.post("/api/runs", json={"scenario_id": "order-status-success"})
+    assert r.status_code == 201
+    run = r.json()
+    assert run["status"] == "passed"
+    assert run["passed_count"] == run["total_count"] and run["total_count"] > 0
+    assert run["duration_ms"] is not None and run["duration_ms"] >= 0
+
+    fetched = client.get(f"/api/runs/{run['id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["id"] == run["id"]
+    assert len(fetched.json()["assertions"]) == run["total_count"]
+
+
+def test_known_failure_tool_failure_on_v1(client):
+    # mock-v1 does not handle tool failures gracefully: this MUST fail,
+    # with an explanation on the failing assertions.
+    r = client.post(
+        "/api/runs", json={"scenario_id": "tool-failure", "agent_version_id": "mock-v1"}
+    )
+    assert r.status_code == 201
+    run = r.json()
+    assert run["status"] == "failed"
+    failed = [a for a in run["assertions"] if not a["passed"]]
+    assert failed, "expected at least one failing assertion"
+    assert all(a["explanation"] for a in failed)
+
+
+def test_tool_failure_passes_on_v2(client):
+    r = client.post(
+        "/api/runs", json={"scenario_id": "tool-failure", "agent_version_id": "mock-v2"}
+    )
+    assert r.status_code == 201
+    assert r.json()["status"] == "passed"
+
+
+def test_events_are_ordered(client):
+    run = client.post("/api/runs", json={"scenario_id": "order-status-success"}).json()
+    r = client.get(f"/api/runs/{run['id']}/events")
+    assert r.status_code == 200
+    seqs = [e["seq"] for e in r.json()]
+    assert seqs == sorted(seqs)
+    assert seqs[0] == 1
+    assert len(seqs) == len(set(seqs)), "seq must be unique"
+    assert r.json()[0]["event_type"] == "run_started"
+
+
+def test_replay_creates_new_run(client):
+    original = client.post("/api/runs", json={"scenario_id": "order-status-success"}).json()
+    replay = client.post(f"/api/runs/{original['id']}/replay", json={})
+    assert replay.status_code == 201
+    new_run = replay.json()
+    assert new_run["id"] != original["id"]
+    assert new_run["replay_of_run_id"] == original["id"]
+    # Original untouched
+    again = client.get(f"/api/runs/{original['id']}").json()
+    assert again["replay_of_run_id"] is None
+
+
+def test_agent_versions_list_and_create(client):
+    versions = client.get("/api/agent-versions").json()
+    ids = {v["id"] for v in versions}
+    assert {"mock-v1", "mock-v2"} <= ids
+
+    created = client.post(
+        "/api/agent-versions",
+        json={
+            "name": "Mock Support Agent",
+            "version": "v3-test",
+            "description": "created in tests",
+            "config": {"handles_tool_failure_gracefully": True},
+        },
+    )
+    assert created.status_code == 201
+    assert created.json()["version"] == "v3-test"
+    # Duplicate id rejected
+    dup = client.post(
+        "/api/agent-versions",
+        json={"id": created.json()["id"], "name": "x", "version": "vX"},
+    )
+    assert dup.status_code == 409
+
+
+def test_compare_newly_passed(client):
+    left = client.post(
+        "/api/runs", json={"scenario_id": "tool-failure", "agent_version_id": "mock-v1"}
+    ).json()
+    right = client.post(
+        "/api/runs", json={"scenario_id": "tool-failure", "agent_version_id": "mock-v2"}
+    ).json()
+    r = client.post(
+        "/api/compare", json={"left_run_ids": [left["id"]], "right_run_ids": [right["id"]]}
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["summary"]["newly_passed"] == 1
+    assert body["items"][0]["change"] == "newly_passed"
+
+    # Mode B: by agent version also works
+    r2 = client.post(
+        "/api/compare",
+        json={"baseline_agent_version_id": "mock-v1", "candidate_agent_version_id": "mock-v2"},
+    )
+    assert r2.status_code == 200
+    changes = {i["scenario_id"]: i["change"] for i in r2.json()["items"]}
+    assert changes.get("tool-failure") == "newly_passed"
+
+
+def test_run_validation_errors(client):
+    assert client.post("/api/runs", json={"scenario_id": "nope"}).status_code == 404
+    assert client.post("/api/runs", json={}).status_code == 422
+    assert client.get("/api/runs/nope").status_code == 404
+    assert client.get("/api/runs/nope/events").status_code == 404

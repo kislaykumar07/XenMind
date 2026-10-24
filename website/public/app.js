@@ -957,7 +957,11 @@ function viewLLM(notice, kind) {
     if (!key) { out.textContent = "Add your API key first."; return; }
     busy(btn, "Testing…"); out.textContent = "";
     try {
-      const r = await fetch("/api/llm/test", { method: "POST", headers: authHeaders({ "Content-Type": "application/json" }), body: JSON.stringify({ provider: document.getElementById("llm-provider").value, model: document.getElementById("llm-model").value.trim() || undefined }) });
+      // Send the key as typed right now, not only a previously saved one —
+      // otherwise Test fails even though the field is filled in.
+      const h = authHeaders({ "Content-Type": "application/json" });
+      if (key) h["X-LLM-Key"] = key;
+      const r = await fetch("/api/llm/test", { method: "POST", headers: h, body: JSON.stringify({ provider: document.getElementById("llm-provider").value, model: document.getElementById("llm-model").value.trim() || undefined }) });
       if (!r.ok) { let m = `failed (${r.status})`; try { const j = await r.json(); m = (j.detail && j.detail.message) || m; } catch {} throw new Error(m); }
       const j = await r.json();
       out.innerHTML = `<span style="color:var(--success)">Connected — ${esc(j.provider)} · ${esc(j.model)} replied "${esc(j.reply)}".</span>`;

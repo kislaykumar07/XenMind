@@ -357,7 +357,23 @@ def llm_test(payload: LLMTestRequest, x_llm_key: str | None = Header(default=Non
             status_code=400,
             detail={"code": "llm_key_required", "message": "Add your provider API key in LLM settings first."},
         )
-    return test_provider(payload.provider, payload.model, x_llm_key)
+    from app.runner.llm_agent import LLMError
+
+    try:
+        return test_provider(payload.provider, payload.model, x_llm_key)
+    except LLMError as exc:
+        # Never leak a raw 500 for a provider problem: surface the real cause
+        # (bad key, rate limit, bad model) with a matching status code.
+        msg = str(exc)
+        if "401" in msg or "rejected" in msg:
+            status, code = 401, "llm_key_rejected"
+        elif "429" in msg or "rate limit" in msg:
+            status, code = 429, "llm_rate_limited"
+        elif "timed out" in msg:
+            status, code = 504, "llm_timeout"
+        else:
+            status, code = 502, "llm_provider_error"
+        raise HTTPException(status_code=status, detail={"code": code, "message": msg})
 
 
 # --- Stats (for trend charts) --------------------------------------------------

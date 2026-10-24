@@ -243,9 +243,18 @@ def test_provider(provider: str, model: str | None, api_key: str) -> dict:
             )
     except httpx.TimeoutException:
         raise LLMError("Provider timed out after 30s.")
+    except LLMError:
+        raise
+    except Exception as exc:
+        raise LLMError(f"Provider request failed: {exc}")
     if resp.status_code == 401:
         raise LLMError("API key rejected by the provider (401). Check the key.")
+    if resp.status_code == 429:
+        raise LLMError("Provider rate limit hit (429). Wait a minute and retry.")
     if resp.status_code >= 400:
         raise LLMError(f"Provider error {resp.status_code}: {resp.text[:300]}")
-    return {"ok": True, "provider": provider, "model": mdl,
-            "reply": (resp.json()["choices"][0]["message"].get("content") or "").strip()}
+    try:
+        reply = (resp.json()["choices"][0]["message"].get("content") or "").strip()
+    except Exception:
+        raise LLMError("Provider returned an unexpected response shape.")
+    return {"ok": True, "provider": provider, "model": mdl, "reply": reply}

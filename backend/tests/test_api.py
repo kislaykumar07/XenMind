@@ -193,3 +193,14 @@ def test_stats_endpoint(client):
     stats = client.get("/api/stats").json()
     assert stats["total_runs"] >= 1
     assert stats["by_day"]
+
+
+def test_llm_test_maps_provider_errors(client, monkeypatch):
+    from app.runner import llm_agent
+
+    def boom(*a, **k):
+        raise llm_agent.LLMError("API key rejected by the provider (401). Check the key.")
+    monkeypatch.setattr(llm_agent, "test_provider", boom)
+    r = client.post("/api/llm/test", json={"provider": "groq"}, headers={"X-LLM-Key": "gsk_bad"})
+    assert r.status_code == 401
+    assert "rejected" in r.json()["detail"]["message"]

@@ -32,6 +32,22 @@ class Settings:
         )
     )
     max_user_message_chars: int = int(os.getenv("MAX_USER_MESSAGE_CHARS", "4000"))
+    # Session tokens for the lab's own auth (Google sign-in verified server-side).
+    # Set a real value in production; the fallback only ever signs demo sessions.
+    session_secret: str = os.getenv("SESSION_SECRET", "xenmind-dev-secret-change-me")
+    google_client_id: str = os.getenv(
+        "GOOGLE_CLIENT_ID",
+        "565488602493-f0nopvv1a1jard8v2t0rqe0bsi480us6.apps.googleusercontent.com",
+    )
+    # Cron protection for /api/cron/daily (Vercel Cron). Empty = endpoint disabled.
+    cron_secret: str = os.getenv("CRON_SECRET", "")
+    # Razorpay (optional — billing stays in preview mode until both are set).
+    razorpay_key_id: str = os.getenv("RAZORPAY_KEY_ID", "")
+    razorpay_key_secret: str = os.getenv("RAZORPAY_KEY_SECRET", "")
+    # Server-side LLM keys (optional — users normally bring their own key, which
+    # is sent per-request and never stored; server keys only power schedules).
+    groq_api_key: str = os.getenv("GROQ_API_KEY", "")
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
 
 
 settings = Settings()

@@ -22,6 +22,8 @@ class Scenario(Base):
     tags = Column(JSON, nullable=False, default=list)
     context = Column(JSON, nullable=False, default=dict)
     assertions = Column(JSON, nullable=False, default=list)
+    is_custom = Column(Boolean, nullable=False, default=False)
+    created_by = Column(String(200), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
@@ -50,6 +52,9 @@ class TestRun(Base):
     passed_count = Column(Integer, nullable=False, default=0)
     total_count = Column(Integer, nullable=False, default=0)
     replay_of_run_id = Column(String(64), ForeignKey("test_runs.id"), nullable=True)
+    workspace_id = Column(String(80), ForeignKey("workspaces.id"), nullable=True, index=True)
+    agent_kind = Column(String(20), nullable=False, default="mock")  # mock | llm
+    model = Column(String(120), nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=False)
     finished_at = Column(DateTime(timezone=True), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
@@ -74,6 +79,61 @@ class RunEvent(Base):
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     run = relationship("TestRun", back_populates="events")
+
+
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id = Column(String(80), primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    join_code = Column(String(16), unique=True, nullable=False, index=True)
+    created_by = Column(String(200), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class WorkspaceMember(Base):
+    __tablename__ = "workspace_members"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    workspace_id = Column(String(80), ForeignKey("workspaces.id"), nullable=False, index=True)
+    user_email = Column(String(200), nullable=False, index=True)
+    role = Column(String(20), nullable=False, default="member")  # owner | member
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class Schedule(Base):
+    __tablename__ = "schedules"
+
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(200), nullable=False, default="Nightly suite")
+    agent_version_id = Column(String(80), ForeignKey("agent_versions.id"), nullable=False)
+    workspace_id = Column(String(80), ForeignKey("workspaces.id"), nullable=True)
+    webhook_url = Column(String(500), nullable=True)
+    enabled = Column(Boolean, nullable=False, default=True)
+    created_by = Column(String(200), nullable=True)
+    last_run_at = Column(DateTime(timezone=True), nullable=True)
+    last_status = Column(String(20), nullable=True)
+    last_summary = Column(JSON, nullable=False, default=dict)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    schedule_id = Column(String(64), ForeignKey("schedules.id"), nullable=True)
+    kind = Column(String(40), nullable=False, default="regression")  # regression | info
+    message = Column(Text, nullable=False)
+    run_id = Column(String(64), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class UserPlan(Base):
+    __tablename__ = "user_plans"
+
+    user_email = Column(String(200), primary_key=True)
+    plan = Column(String(20), nullable=False, default="free")  # free | pro | team
+    updated_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
 
 class AssertionResult(Base):

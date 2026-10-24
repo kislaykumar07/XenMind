@@ -15,5 +15,14 @@ from app.main import app  # noqa: E402
 
 @pytest.fixture(scope="session")
 def client():
+    from app.services.auth import make_session
+
+    with TestClient(app) as c:
+        c.headers["Authorization"] = f"Bearer {make_session('test@xenmind.local', 'Test User')}"
+        yield c
+
+
+@pytest.fixture(scope="session")
+def anon_client():
     with TestClient(app) as c:
         yield c

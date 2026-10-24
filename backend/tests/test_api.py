@@ -136,3 +136,60 @@ def test_run_validation_errors(client):
     assert client.post("/api/runs", json={}).status_code == 422
     assert client.get("/api/runs/nope").status_code == 404
     assert client.get("/api/runs/nope/events").status_code == 404
+
+
+# --- v3 additions ------------------------------------------------------------
+def test_writes_require_auth(anon_client):
+    assert anon_client.post("/api/runs", json={"scenario_id": "order-status-success"}).status_code == 401
+    assert anon_client.post("/api/agent-versions", json={"name": "X", "version": "v9"}).status_code == 401
+
+
+def test_create_custom_scenario_and_run_it(client):
+    r = client.post("/api/scenarios", json={
+        "id": "custom-hello", "title": "Custom hello", "description": "d",
+        "category": "custom", "user_message": "Hi, where is my order ORD-1001?",
+        "expected_outcome": "order_status_provided", "tags": ["custom"],
+        "context": {"intent": "order_status"},
+        "assertions": [{"id": "a1", "type": "tool_called", "description": "lookup", "tool": "lookup_order"}],
+    })
+    assert r.status_code == 201, r.text
+    assert client.post("/api/scenarios", json={
+        "id": "custom-hello", "title": "x", "category": "c",
+        "user_message": "hi", "expected_outcome": "x", "assertions": [],
+    }).status_code == 409
+    run = client.post("/api/runs", json={"scenario_id": "custom-hello"}).json()
+    assert run["status"] == "passed"
+
+
+def test_llm_test_requires_key(client):
+    r = client.post("/api/llm/test", json={"provider": "groq"})
+    assert r.status_code == 400
+
+
+def test_workspace_and_schedule_flow(client):
+    ws = client.post("/api/workspaces", json={"name": "Team Alpha"}).json()
+    assert ws["join_code"]
+    joined = client.post("/api/workspaces/join", json={"code": ws["join_code"]}).json()
+    assert joined["id"] == ws["id"]
+    sched = client.post("/api/schedules", json={
+        "name": "Suite check", "agent_version_id": "mock-v1", "workspace_id": ws["id"],
+    }).json()
+    assert sched["id"]
+    result = client.post(f"/api/schedules/{sched['id']}/run").json()
+    assert result["ok"] is True
+    assert result["total"] >= 20  # 11 original + 12 pack scenarios - custom ones
+    alerts = client.get("/api/alerts").json()
+    assert isinstance(alerts, list)
+
+
+def test_billing_dormant_without_keys(client):
+    r = client.post("/api/billing/checkout", json={"plan": "pro"})
+    assert r.status_code == 503
+    plan = client.get("/api/billing/plan").json()
+    assert plan["plan"] == "free"
+
+
+def test_stats_endpoint(client):
+    stats = client.get("/api/stats").json()
+    assert stats["total_runs"] >= 1
+    assert stats["by_day"]

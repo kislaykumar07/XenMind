@@ -13,6 +13,8 @@ class ScenarioOut(BaseModel):
     expected_outcome: str
     tags: list[str] = []
     assertions: list[dict[str, Any]] = []
+    is_custom: bool = False
+    created_by: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -53,6 +55,104 @@ class AgentVersionOut(BaseModel):
 class RunCreate(BaseModel):
     scenario_id: str = Field(..., min_length=1, max_length=80)
     agent_version_id: Optional[str] = Field(default=None, max_length=80)
+    workspace_id: Optional[str] = Field(default=None, max_length=80)
+
+
+class ScenarioCreate(BaseModel):
+    id: str = Field(..., min_length=1, max_length=80)
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(default="", max_length=2000)
+    category: str = Field(..., min_length=1, max_length=80)
+    user_message: str = Field(..., min_length=1, max_length=4000)
+    expected_outcome: str = Field(..., min_length=1, max_length=80)
+    tags: list[str] = []
+    context: dict[str, Any] = {}
+    assertions: list[dict[str, Any]] = []
+
+    @field_validator("id")
+    @classmethod
+    def id_slug(cls, v):
+        import re as _re
+
+        if not _re.fullmatch(r"[a-z0-9][a-z0-9\-_]*", v):
+            raise ValueError("id must be lowercase letters, digits, - or _")
+        return v
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str = Field(..., min_length=10)
+
+
+class AuthResponse(BaseModel):
+    email: str
+    name: str
+    picture: str
+    token: str
+
+
+class LLMTestRequest(BaseModel):
+    provider: str = Field(default="groq", max_length=20)
+    model: Optional[str] = Field(default=None, max_length=120)
+
+
+class WorkspaceCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+
+
+class WorkspaceOut(BaseModel):
+    id: str
+    name: str
+    join_code: str
+    role: str = "member"
+    member_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class WorkspaceJoin(BaseModel):
+    code: str = Field(..., min_length=1, max_length=16)
+
+
+class ScheduleCreate(BaseModel):
+    name: str = Field(default="Nightly suite", max_length=200)
+    agent_version_id: str = Field(..., max_length=80)
+    workspace_id: Optional[str] = Field(default=None, max_length=80)
+    webhook_url: Optional[str] = Field(default=None, max_length=500)
+
+
+class ScheduleOut(BaseModel):
+    id: str
+    name: str
+    agent_version_id: str
+    workspace_id: Optional[str] = None
+    webhook_url: Optional[str] = None
+    enabled: bool
+    last_run_at: Optional[datetime] = None
+    last_status: Optional[str] = None
+    last_summary: dict[str, Any] = {}
+
+    model_config = {"from_attributes": True}
+
+
+class AlertOut(BaseModel):
+    id: int
+    schedule_id: Optional[str] = None
+    kind: str
+    message: str
+    run_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class BillingCheckoutRequest(BaseModel):
+    plan: str = Field(..., max_length=20)
+
+
+class BillingVerifyRequest(BaseModel):
+    order_id: str
+    payment_id: str
+    signature: str
 
 
 class AssertionResultOut(BaseModel):
@@ -77,6 +177,9 @@ class RunOut(BaseModel):
     passed_count: int
     total_count: int
     replay_of_run_id: Optional[str] = None
+    workspace_id: Optional[str] = None
+    agent_kind: str = "mock"
+    model: Optional[str] = None
     started_at: datetime
     finished_at: datetime
 

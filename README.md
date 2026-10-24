@@ -2,16 +2,22 @@
 
 > Break it. Trace it. Trust it.
 
+**Live: https://xenmind.vercel.app**
+
 XenMind tests AI agents against repeatable scenarios, records execution traces,
 replays failures, and compares agent versions — with evidence, not invented scores.
 
-## Repo layout (cleaned 2026-10-24)
+## Repo layout (cleaned 2026-10-24, live code added same day)
 
 ```
 backend/    FastAPI backend — the full MVP (11 endpoints, 11 seeded scenarios,
             deterministic mock agent, replay + compare). Start here.
 frontend/   Lovable/TanStack frontend source, extracted into real files.
             src/lib/api.ts is the ONLY backend adapter (see its header).
+website/    The LIVE deployment (static SPA + serverless FastAPI entry) —
+            see website/README.md. Google sign-in gate, cache-first UI,
+            subscription plans UI (billing not live), Postgres via
+            DATABASE_URL (Neon) in production.
 docs/       XenMind_Product_Spec.md + project-kit notes.
 ```
 

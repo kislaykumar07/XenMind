@@ -1,0 +1,1 @@
+{"env":{"DATABASE_URL":"sqlite:////tmp/xenmind.db","CORS_ORIGINS":"*"}}

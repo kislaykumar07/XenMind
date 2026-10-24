@@ -13,14 +13,22 @@ from app.schemas.schemas import HealthOut
 from app.services.seed import seed_db
 
 
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
+def _bootstrap() -> None:
+    """Create tables + seed. Idempotent. Runs at import time as well as in
+    lifespan, because when this app sits behind an in-process proxy (e.g. a
+    serverless entrypoint delegating via ASGI transport) the inner app's
+    lifespan events may never fire — and then every table would be missing."""
     init_db()
     db = SessionLocal()
     try:
         seed_db(db)  # idempotent
     finally:
         db.close()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _bootstrap()
     yield
 
 
@@ -43,6 +51,13 @@ app.add_middleware(
 )
 
 app.include_router(router)
+
+try:
+    _bootstrap()
+except Exception:
+    # Never let bootstrap kill the import; /health will report database status
+    # and lifespan will retry on a normal (non-proxied) startup.
+    pass
 
 
 @app.get("/health", response_model=HealthOut, tags=["health"])

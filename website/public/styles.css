@@ -107,7 +107,13 @@ section.band{border-top:1px solid var(--border)}
 
 /* lab shell */
 .lab{display:flex;min-height:100vh;flex-direction:column}
-@media(min-width:768px){.lab{flex-direction:row}}
+@media(min-width:768px){
+  .lab{flex-direction:row;height:100vh;height:100dvh;overflow:hidden}
+  /* Pinned sidebar: only the main pane scrolls, so the logo, nav and user
+     card stay put while a long page scrolls underneath. */
+  aside.side{height:100vh;height:100dvh;overflow-y:auto}
+  main.lab-main{height:100vh;height:100dvh;overflow-y:auto;min-height:0}
+}
 aside.side{background:var(--surface);border-bottom:1px solid var(--border);padding:1rem}
 @media(min-width:768px){aside.side{width:14rem;flex:none;border-bottom:0;border-right:1px solid var(--border)}}
 aside nav{display:flex;gap:.25rem;overflow-x:auto;margin-top:1.5rem}

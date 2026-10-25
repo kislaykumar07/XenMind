@@ -234,6 +234,7 @@ function landingHTML() {
   <section class="bg-grid" style="border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
     <div class="wrap hero">
       <div>
+        <img src="/hero-lab.jpg" alt="An AI agent under examination in the XenMind reliability lab" style="display:block;width:100%;border-radius:.9rem;border:1px solid var(--border);box-shadow:var(--glow);margin-bottom:1.75rem">
         <p class="eyebrow">AI Agent Reliability Lab</p>
         <h1 class="big">Break it. <span class="text-signal">Trace it.</span> Trust it.</h1>
         <p class="lede">Run your agent through hostile scenarios, see every step it took, and know what changed between versions.</p>

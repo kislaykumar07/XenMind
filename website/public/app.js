@@ -270,7 +270,8 @@ function landingHTML() {
       </div>
     </div>
   </section>
-  <section class="wrap reveal" id="watch" style="padding:4rem 1.5rem 1rem;scroll-margin-top:1rem">
+  <section class="reveal" id="watch" style="padding:4rem 1.5rem 1rem;scroll-margin-top:1rem">
+    <div style="max-width:56rem;margin:0 auto;text-align:center">
     <p class="eyebrow">New here? Start here</p>
     <h2 style="font-size:1.9rem;font-weight:600;letter-spacing:-.01em;margin:.4rem 0 .4rem">Watch how XenMind works — in 1 minute</h2>
     <p class="muted" style="margin:0 0 1.5rem;line-height:1.6">What it is, why agents need testing, and the four steps from scenario to verdict — in plain words, no jargon.</p>
@@ -291,7 +292,8 @@ function landingHTML() {
         <audio id="watch-audio" preload="none"></audio>
       </div>
     </div>
-    <p class="muted" style="margin:1rem 0 0;font-size:.85rem">Transcript: Meet XenMind — a lab that tests AI agents before you trust them with real customers. AI agents sound confident even when wrong, so XenMind gives you 23 ready-made scenarios, records every step of a run, judges it with simple pass/fail checks, and graphs what changed between versions. Share any run as a report, or schedule daily runs that warn you when something breaks.</p>
+    <p class="muted" style="margin:1rem 0 0;font-size:.85rem;text-align:left">Transcript: Meet XenMind — a lab that tests AI agents before you trust them with real customers. AI agents sound confident even when wrong, so XenMind gives you 23 ready-made scenarios, records every step of a run, judges it with simple pass/fail checks, and graphs what changed between versions. Share any run as a report, or schedule daily runs that warn you when something breaks.</p>
+    </div>
   </section>
   <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee-track"></div></div>
   <div class="wrap">

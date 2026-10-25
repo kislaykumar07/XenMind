@@ -262,8 +262,8 @@ html{scroll-behavior:smooth}
 .marquee { overflow: hidden; border-bottom: 1px solid var(--border); padding: .7rem 0; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
 .marquee-track { display: inline-flex; gap: 1.6rem; white-space: nowrap; animation: marquee 38s linear infinite; }
 .marquee-track:hover { animation-play-state: paused; }
-.mq-item { font-size: .85rem; color: var(--muted); }
-.mq-dot { color: #7c6cff; }
+.mq-item { font-size: .85rem; color: var(--muted-foreground); }
+.mq-dot { color: var(--cyan); }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
 .reveal.revealed { opacity: 1; transform: none; }

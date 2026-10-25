@@ -56,7 +56,7 @@ header.top{display:flex;align-items:center;justify-content:space-between;padding
 
 /* hero */
 .hero{display:grid;gap:3rem;padding:5rem 0}
-@media(min-width:1024px){.hero{grid-template-columns:1fr 1fr;align-items:center}}
+@media(min-width:1024px){.hero{grid-template-columns:1fr 1fr;align-items:start}}
 .eyebrow{font-family:"JetBrains Mono",monospace;font-size:.72rem;text-transform:uppercase;letter-spacing:.18em;color:var(--cyan)}
 h1.big{font-size:clamp(2.6rem,6vw,3.9rem);line-height:1.05;font-weight:600;letter-spacing:-.02em;margin:1rem 0 0}
 .lede{margin-top:1.5rem;font-size:1.125rem;color:var(--muted-foreground);max-width:28rem;line-height:1.6}

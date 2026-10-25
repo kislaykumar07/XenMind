@@ -69,8 +69,9 @@ files are intentionally NOT in this repo: the snapshot-push route used here
 only handles UTF-8 text files, so binary assets can't be pushed through it.
 They live in the deployment folder and are verified serving on the live site
 (xenmind.vercel.app/watch/slide1.png, …/slide8.mp3). The same applies to
-the home-page hero image `website/public/hero-lab.jpg` (an AI agent under
-examination in the lab, violet/cyan on dark navy) — also a binary asset
+the home-page hero image `website/public/hero-lab.jpg` (a real Pexels
+photograph by Pavel Danilyuk: a woman testing a robotic arm over a
+chessboard — free to use, credited on the page) — also a binary asset
 that the text-only snapshot route cannot carry. Everything else in
 `website/` — including the player code in `public/app.js` — mirrors the live
 deployment exactly.

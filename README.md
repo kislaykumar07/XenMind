@@ -60,3 +60,14 @@ Deterministic mock tools only (`lookup_order`, `search_help_center`,
 `create_support_ticket`). No real external actions, no arbitrary code execution,
 no invented latency/cost/accuracy metrics — `duration_ms` is measured only.
 Secrets stay server-side; `.env.example` holds placeholders only.
+
+## Note: home-page explainer media (`website/public/watch/`)
+
+The home page's "Watch how it works" player loads its slides (`slide1–8.png`)
+and narration clips (`slide1–8.mp3`) from `website/public/watch/`. Those media
+files are intentionally NOT in this repo: the snapshot-push route used here
+only handles UTF-8 text files, so binary assets can't be pushed through it.
+They live in the deployment folder and are verified serving on the live site
+(xenmind.vercel.app/watch/slide1.png, …/slide8.mp3). Everything else in
+`website/` — including the player code in `public/app.js` — mirrors the live
+deployment exactly.

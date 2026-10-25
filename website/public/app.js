@@ -239,6 +239,7 @@ function landingHTML() {
         <p class="lede">Run your agent through hostile scenarios, see every step it took, and know what changed between versions.</p>
         <div style="margin-top:2rem;display:flex;flex-wrap:wrap;gap:.75rem">
           <a class="btn btn-primary btn-lg" href="#/lab">Run a demo test <span class="arr">→</span></a>
+          <a class="btn btn-ghost btn-lg" href="#watch">▶ Watch how it works · 1 min</a>
           <a class="btn btn-ghost btn-lg" href="#workflow">How it works</a>
         </div>
         <div id="hero-stats" style="margin-top:2.5rem">${state.loaded ? heroStatsHTML() : `<p class="muted"><span class="spinner"></span> Loading live numbers…</p>`}</div>
@@ -268,6 +269,29 @@ function landingHTML() {
         </div>
       </div>
     </div>
+  </section>
+  <section class="wrap reveal" id="watch" style="padding:4rem 1.5rem 1rem;scroll-margin-top:1rem">
+    <p class="eyebrow">New here? Start here</p>
+    <h2 style="font-size:1.9rem;font-weight:600;letter-spacing:-.01em;margin:.4rem 0 .4rem">Watch how XenMind works — in 1 minute</h2>
+    <p class="muted" style="margin:0 0 1.5rem;line-height:1.6">What it is, why agents need testing, and the four steps from scenario to verdict — in plain words, no jargon.</p>
+    <div class="card shadow-glow" style="padding:0;overflow:hidden">
+      <div style="position:relative;background:#000">
+        <img id="watch-img" src="/watch/slide1.png" alt="XenMind explainer video frame" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover">
+        <button id="watch-bigplay" aria-label="Play the explainer video" style="position:absolute;inset:0;margin:auto;width:84px;height:84px;border-radius:99px;border:0;background:rgba(124,108,255,.92);color:#fff;font-size:2rem;cursor:pointer">▶</button>
+      </div>
+      <div style="padding:1rem 1.25rem 1.25rem">
+        <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+          <button id="watch-play" class="btn btn-primary btn-sm">▶ Play</button>
+          <button id="watch-prev" class="btn btn-ghost btn-sm">‹ Prev</button>
+          <button id="watch-next" class="btn btn-ghost btn-sm">Next ›</button>
+          <span id="watch-count" class="mono muted" style="font-size:.8rem">1 / 8</span>
+          <span id="watch-title" style="font-size:.9rem;font-weight:500">Meet XenMind</span>
+        </div>
+        <div style="height:8px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:1rem"><div id="watch-bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--primary),var(--cyan));border-radius:99px"></div></div>
+        <audio id="watch-audio" preload="none"></audio>
+      </div>
+    </div>
+    <p class="muted" style="margin:1rem 0 0;font-size:.85rem">Transcript: Meet XenMind — a lab that tests AI agents before you trust them with real customers. AI agents sound confident even when wrong, so XenMind gives you 23 ready-made scenarios, records every step of a run, judges it with simple pass/fail checks, and graphs what changed between versions. Share any run as a report, or schedule daily runs that warn you when something breaks.</p>
   </section>
   <div class="marquee" aria-hidden="true"><div class="marquee-track" id="marquee-track"></div></div>
   <div class="wrap">
@@ -301,6 +325,61 @@ function fillMarquee() {
   const titles = (state.scenarios.length ? state.scenarios.map((s) => s.title) : MARQUEE_FALLBACK);
   const items = titles.map((t) => `<span class="mq-item">${esc(t)}</span><span class="mq-dot">✦</span>`).join("");
   track.innerHTML = items + items; // duplicated for a seamless loop
+}
+/* Home-page explainer player: the same narrated video as slides + voiceover.
+   (A single MP4 can't be deployed from here — the file-upload path caps
+   arguments well below video size — so the video ships as its slides and
+   narration clips, which play back exactly like the video.) */
+const WATCH_SLIDES = [
+  ["slide1", "Meet XenMind"], ["slide2", "The problem"], ["slide3", "Pick a test case"],
+  ["slide4", "Run your agent"], ["slide5", "The verdict"], ["slide6", "Compare versions"],
+  ["slide7", "Share & schedule"], ["slide8", "Try it free"],
+];
+function initWatchPlayer() {
+  const img = document.getElementById("watch-img");
+  const audio = document.getElementById("watch-audio");
+  if (!img || !audio) return;
+  let idx = 0, playing = false;
+  const playBtn = document.getElementById("watch-play");
+  const bigPlay = document.getElementById("watch-bigplay");
+  const count = document.getElementById("watch-count");
+  const title = document.getElementById("watch-title");
+  const bar = document.getElementById("watch-bar");
+  const show = (i) => {
+    idx = Math.max(0, Math.min(WATCH_SLIDES.length - 1, i));
+    img.src = `/watch/${WATCH_SLIDES[idx][0]}.png`;
+    count.textContent = `${idx + 1} / ${WATCH_SLIDES.length}`;
+    title.textContent = WATCH_SLIDES[idx][1];
+    bar.style.width = "0%";
+    const want = `/watch/${WATCH_SLIDES[idx][0]}.mp3`;
+    if (audio.getAttribute("src") !== want) { audio.src = want; audio.load(); }
+  };
+  const paint = () => {
+    playBtn.textContent = playing ? "❚❚ Pause" : (idx === WATCH_SLIDES.length - 1 && audio.ended ? "↻ Replay" : "▶ Play");
+    bigPlay.style.display = playing ? "none" : "block";
+  };
+  const play = () => {
+    if (idx === WATCH_SLIDES.length - 1 && audio.ended) show(0);
+    audio.play().catch(() => {});
+    playing = true; paint();
+  };
+  const pause = () => { audio.pause(); playing = false; paint(); };
+  playBtn.addEventListener("click", () => (playing ? pause() : play()));
+  bigPlay.addEventListener("click", play);
+  document.getElementById("watch-prev").addEventListener("click", () => { show(idx - 1); if (playing) play(); });
+  document.getElementById("watch-next").addEventListener("click", () => { show(idx + 1); if (playing) play(); });
+  audio.addEventListener("timeupdate", () => {
+    if (audio.duration) bar.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+  });
+  audio.addEventListener("ended", () => {
+    if (idx < WATCH_SLIDES.length - 1) { show(idx + 1); play(); }
+    else { playing = false; paint(); }
+  });
+  if (!window.__watchBound) {
+    window.__watchBound = true;
+    window.addEventListener("hashchange", () => { const a = document.getElementById("watch-audio"); if (a) a.pause(); });
+  }
+  show(0); paint();
 }
 function initReveal() {
   const els = document.querySelectorAll(".reveal:not(.revealed)");
@@ -1145,6 +1224,7 @@ async function render(soft) {
     fillHero();
     fillMarquee();
     initReveal();
+    initWatchPlayer();
     if (!soft) window.scrollTo(0, 0);
     return;
   }

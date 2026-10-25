@@ -34,16 +34,19 @@ const parseJwt = (t) => { try { const b = t.split(".")[1].replace(/-/g, "+").rep
 async function onGoogleCredential(resp) {
   const p = parseJwt(resp.credential);
   if (!p) { toast("Google sign-in returned an unreadable response. Try again.", "err"); return; }
-  setUser({ name: p.name || p.email, email: p.email, picture: p.picture || "" });
   try {
-    // Verify the Google token on the server and get a session for write calls.
+    // Verify the Google token on the server FIRST and only then mark the user
+    // signed in. Setting the user before verification used to leave a
+    // half-signed-in lab (name shown, no server session) where every save
+    // failed with a confusing 401 banner.
     const r = await fetch("/api/auth/google", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential: resp.credential }) });
     if (!r.ok) throw new Error(`server sign-in failed (${r.status})`);
     const sess = await r.json();
     setSession(sess.token);
-    if (sess.email) setUser({ name: sess.name || p.name, email: sess.email, picture: sess.picture || p.picture || "" });
+    setUser({ name: sess.name || p.name, email: sess.email, picture: sess.picture || p.picture || "" });
   } catch (e) {
-    toast("Signed in with Google, but the server session failed — runs and saves need it. Please sign in again.", "err");
+    setUser(null); setSession(null);
+    toast("Google sign-in reached the site, but the server session failed — please sign in again.", "err");
     return;
   }
   toast(`Welcome, ${(p.name || "there").split(" ")[0]} — you're signed in.`);
@@ -1125,7 +1128,9 @@ async function render(soft) {
   }
   if (path.startsWith("/share/")) { viewShare(path.split("/")[2]); return; }
   if (path.startsWith("/lab")) {
-    if (!getUser()) { sessionStorage.setItem("xm_return", hash); location.hash = "#/login"; return; }
+    // A user chip without a server session is the half-signed-in state: bounce
+    // to login for a clean re-sign-in instead of failing every save with 401.
+    if (!getUser() || !getSession()) { sessionStorage.setItem("xm_return", hash); location.hash = "#/login"; return; }
     if (!state.loaded) {
       $app.innerHTML = skeletonHTML();
       try { await fetchCore(); }

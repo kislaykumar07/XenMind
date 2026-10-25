@@ -278,8 +278,8 @@ function landingHTML() {
     <h2 style="font-size:1.9rem;font-weight:600;letter-spacing:-.01em;margin:.4rem 0 .4rem">Watch how XenMind works — in 1 minute</h2>
     <p class="muted" style="margin:0 0 1.5rem;line-height:1.6">What it is, why agents need testing, and the four steps from scenario to verdict — in plain words, no jargon.</p>
     <div class="card shadow-glow" style="padding:0;overflow:hidden">
-      <div style="position:relative;background:#000">
-        <img id="watch-img" src="/watch/slide1.png" alt="XenMind explainer video frame" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover">
+      <div style="position:relative;background:#000;overflow:hidden">
+        <img id="watch-img" src="/watch/slide1.jpg" alt="XenMind explainer video frame" style="display:block;width:100%;aspect-ratio:16/9;object-fit:cover;transition:opacity .45s ease">
         <button id="watch-bigplay" aria-label="Play the explainer video" style="position:absolute;inset:0;margin:auto;width:84px;height:84px;border-radius:99px;border:0;background:rgba(124,108,255,.92);color:#fff;font-size:2rem;cursor:pointer">▶</button>
       </div>
       <div style="padding:1rem 1.25rem 1.25rem">
@@ -350,14 +350,36 @@ function initWatchPlayer() {
   const count = document.getElementById("watch-count");
   const title = document.getElementById("watch-title");
   const bar = document.getElementById("watch-bar");
-  const show = (i) => {
+  // Slide durations (narration + a half-second tail) drive the slow-zoom length.
+  const DURATIONS = [6.212, 12.788, 10.292, 13.1, 11.348, 7.388, 5.492, 7.772];
+  const show = (i, animate = true) => {
     idx = Math.max(0, Math.min(WATCH_SLIDES.length - 1, i));
-    img.src = `/watch/${WATCH_SLIDES[idx][0]}.png`;
     count.textContent = `${idx + 1} / ${WATCH_SLIDES.length}`;
     title.textContent = WATCH_SLIDES[idx][1];
     bar.style.width = "0%";
     const want = `/watch/${WATCH_SLIDES[idx][0]}.mp3`;
     if (audio.getAttribute("src") !== want) { audio.src = want; audio.load(); }
+    const apply = () => {
+      img.onload = () => {
+        img.classList.remove("swap");
+        title.classList.remove("swapT");
+        // Restart the slow zoom so every slide moves, timed to its narration.
+        img.classList.remove("kb"); void img.offsetWidth;
+        img.style.animationDuration = DURATIONS[idx] + "s";
+        img.style.animationPlayState = playing ? "running" : "paused";
+        img.classList.add("kb");
+      };
+      img.src = `/watch/${WATCH_SLIDES[idx][0]}.jpg`;
+    };
+    if (!animate) {
+      // Same-URL reloads don't always fire onload: start the zoom directly.
+      img.style.animationDuration = DURATIONS[0] + "s";
+      img.style.animationPlayState = "paused";
+      img.classList.add("kb");
+      apply(); return;
+    }
+    img.classList.add("swap"); title.classList.add("swapT");
+    setTimeout(apply, 220);
   };
   const paint = () => {
     playBtn.textContent = playing ? "❚❚ Pause" : (idx === WATCH_SLIDES.length - 1 && audio.ended ? "↻ Replay" : "▶ Play");
@@ -366,9 +388,10 @@ function initWatchPlayer() {
   const play = () => {
     if (idx === WATCH_SLIDES.length - 1 && audio.ended) show(0);
     audio.play().catch(() => {});
+    img.style.animationPlayState = "running";
     playing = true; paint();
   };
-  const pause = () => { audio.pause(); playing = false; paint(); };
+  const pause = () => { audio.pause(); img.style.animationPlayState = "paused"; playing = false; paint(); };
   playBtn.addEventListener("click", () => (playing ? pause() : play()));
   bigPlay.addEventListener("click", play);
   document.getElementById("watch-prev").addEventListener("click", () => { show(idx - 1); if (playing) play(); });
@@ -384,7 +407,7 @@ function initWatchPlayer() {
     window.__watchBound = true;
     window.addEventListener("hashchange", () => { const a = document.getElementById("watch-audio"); if (a) a.pause(); });
   }
-  show(0); paint();
+  show(0, false); paint();
 }
 /* Hero photo 3D tilt: the photo leans in 3D as the mouse moves over it. */
 function initHeroTilt() {

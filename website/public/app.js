@@ -835,11 +835,38 @@ function viewCompare(notice, kind, result) {
 function compareHTML(res) {
   const s = res.summary || {};
   const chipFor = (c) => c === "newly_passed" ? `<span class="badge pass">Newly passed</span>` : c === "newly_failed" ? `<span class="badge fail">Newly failed</span>` : c === "unchanged_passed" ? `<span class="badge pass">Still passing</span>` : c === "unchanged_failed" ? `<span class="badge fail">Still failing</span>` : `<span class="badge warn">${esc(c.replaceAll("_", " "))}</span>`;
+  // Comparison graph: pass bars per side + a stacked breakdown of what changed.
+  const leftPassed = res.items.filter((i) => i.left_status === "passed").length;
+  const leftTotal = res.items.filter((i) => i.left_status).length;
+  const rightPassed = res.items.filter((i) => i.right_status === "passed").length;
+  const rightTotal = res.items.filter((i) => i.right_status).length;
+  const bar = (label, passed, total, color) => {
+    const pct = total ? Math.round((passed / total) * 100) : 0;
+    return `<div style="margin-bottom:.9rem"><div style="display:flex;justify-content:space-between;font-size:.85rem"><span>${label}</span><span class="mono">${passed}/${total} · ${pct}%</span></div>
+    <div style="height:14px;border-radius:7px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:.3rem"><div style="height:100%;width:${pct}%;background:${color};border-radius:7px"></div></div></div>`;
+  };
+  const segs = [
+    ["Newly passed", s.newly_passed || 0, "#22c55e"], ["Newly failed", s.newly_failed || 0, "#ef4444"],
+    ["Still passing", s.unchanged_passed || 0, "#86efac"], ["Still failing", s.unchanged_failed || 0, "#6b7280"],
+    ["Only baseline", s.only_left || 0, "#f59e0b"], ["Only candidate", s.only_right || 0, "#a78bfa"],
+  ];
+  const segTotal = segs.reduce((a, [, n]) => a + n, 0) || 1;
+  const segBar = segs.map(([label, n, color]) => n ? `<div style="height:100%;width:${(n / segTotal * 100).toFixed(1)}%;background:${color}" title="${label}: ${n}"></div>` : "").join("");
+  const segLegend = segs.filter(([, n]) => n).map(([label, n, color]) => `<span style="font-size:.8rem"><span style="display:inline-block;width:.6rem;height:.6rem;border-radius:2px;background:${color};margin-right:.3rem"></span>${label} (${n})</span>`).join("");
   return `<div class="stats" style="margin-top:1.5rem">
     <div class="stat"><div class="n" style="color:var(--success)">${s.newly_passed || 0}</div><div class="l">Newly passed</div></div>
     <div class="stat"><div class="n" style="color:var(--destructive)">${s.newly_failed || 0}</div><div class="l">Newly failed</div></div>
     <div class="stat"><div class="n">${s.unchanged_passed || 0}</div><div class="l">Unchanged (passing)</div></div>
     <div class="stat"><div class="n">${s.unchanged_failed || 0}</div><div class="l">Unchanged (failing)</div></div></div>
+  <div class="card" style="margin-top:1.5rem">
+    <h3 style="margin:0 0 1rem">Comparison graph</h3>
+    ${bar("Baseline passed", leftPassed, leftTotal, "#a78bfa")}
+    ${bar("Candidate passed", rightPassed, rightTotal, "#22c55e")}
+    <p class="muted" style="font-size:.85rem;margin:1rem 0 .4rem">What changed across ${res.items.length} compared scenarios</p>
+    <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,.07)">${segBar}</div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.6rem" class="muted">${segLegend}</div>
+    ${(s.only_left || s.only_right) ? `<p class="muted" style="font-size:.82rem;margin:1rem 0 0">Tip: "only on one side" rows mean that version never ran that scenario. Run both full suites first for a complete side-by-side.</p>` : ""}
+  </div>
   <div class="tblwrap"><table><thead><tr><th>Scenario</th><th>Baseline</th><th>Candidate</th><th>Change</th></tr></thead><tbody>
   ${res.items.map((i) => `<tr><td>${esc(scenarioName(i.scenario_id))}<p class="idmono">${esc(i.scenario_id)}</p></td>
     <td>${i.left_status ? statusBadge(i.left_status) : `<span class="muted">no run</span>`}</td>

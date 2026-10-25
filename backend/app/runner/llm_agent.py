@@ -125,9 +125,14 @@ def _infer_outcome(final: str, tool_names: list[str]) -> str:
     return "asked_clarification"
 
 
-def _run_tool(name: str, args: dict):
+def _run_tool(name: str, args: dict, scenario=None):
     if name == "lookup_order":
-        return lookup_order(args.get("order_id", ""))
+        # The tool-failure scenario sets force_tool_failure in its context;
+        # the mock agent honours it, and the LLM's tools must too — otherwise
+        # the model sees a successful lookup where the test demands a failure
+        # (this bug made the LLM "pass" the lookup and fail the scenario).
+        force = bool((getattr(scenario, "context", None) or {}).get("force_tool_failure"))
+        return lookup_order(args.get("order_id", ""), force_failure=force)
     if name == "search_help_center":
         return search_help_center(args.get("query", ""))
     if name == "create_support_ticket":
@@ -208,7 +213,7 @@ def run_llm_agent(
                     tool_names.append(fn)
                     add("tool_call", fn, {"tool": fn, "args": args})
                     try:
-                        result = _run_tool(fn, args)
+                        result = _run_tool(fn, args, scenario)
                         add("tool_result", fn, {"tool": fn, "result": result})
                         messages.append(
                             {"role": "tool", "tool_call_id": tc["id"], "content": json.dumps(result)}

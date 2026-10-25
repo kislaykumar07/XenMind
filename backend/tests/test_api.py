@@ -211,3 +211,19 @@ def test_groq_default_is_a_live_model():
 
     # llama-3.3-70b-versatile was retired for free/Developer keys in Aug 2026.
     assert PROVIDERS["groq"]["default_model"] == "openai/gpt-oss-20b"
+
+
+def test_llm_tool_honours_forced_failure():
+    from types import SimpleNamespace
+
+    from app.runner.llm_agent import _run_tool
+    from app.runner.mock_tools import ToolError
+
+    sc = SimpleNamespace(context={"force_tool_failure": True})
+    try:
+        _run_tool("lookup_order", {"order_id": "ORD-1001"}, sc)
+        raise AssertionError("expected ToolError")
+    except ToolError:
+        pass
+    ok = _run_tool("lookup_order", {"order_id": "ORD-1001"}, SimpleNamespace(context={}))
+    assert ok["found"] is True

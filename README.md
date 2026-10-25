@@ -72,6 +72,8 @@ They live in the deployment folder and are verified serving on the live site
 the home-page hero image `website/public/hero-lab.jpg` (a real Pexels
 photograph by Pavel Danilyuk: a woman testing a robotic arm over a
 chessboard — free to use, credited on the page) — also a binary asset
-that the text-only snapshot route cannot carry. Everything else in
+that the text-only snapshot route cannot carry. The same applies to
+`website/public/workflow-3d.jpg`, the 3D workflow illustration on the
+home page's Workflow section. Everything else in
 `website/` — including the player code in `public/app.js` — mirrors the live
 deployment exactly.

@@ -234,7 +234,7 @@ function landingHTML() {
   <section class="bg-grid" style="border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
     <div class="wrap hero">
       <div>
-        <img src="/hero-lab.jpg" alt="A woman testing a robotic arm over a chessboard" style="display:block;width:100%;border-radius:.9rem;border:1px solid var(--border);box-shadow:var(--glow)">
+        <div id="hero-tilt" style="perspective:1100px"><img id="hero-img" src="/hero-lab.jpg" alt="A woman testing a robotic arm over a chessboard" style="display:block;width:100%;border-radius:.9rem;border:1px solid var(--border);box-shadow:var(--glow);transition:transform .25s ease;will-change:transform"></div>
         <p class="muted" style="font-size:.72rem;margin:.5rem 0 1.75rem">A human testing a machine's decisions — the whole idea of XenMind. Photo: Pavel Danilyuk / Pexels.</p>
         <p class="eyebrow">AI Agent Reliability Lab</p>
         <h1 class="big">Break it. <span class="text-signal">Trace it.</span> Trust it.</h1>
@@ -311,6 +311,7 @@ function landingHTML() {
       <ol class="steps" style="list-style:none;margin-left:0;padding-left:0">
         ${["Pick a scenario", "Run your agent", "Inspect the trace", "Replay & compare"].map((s, i) => `<li class="step"><span class="mono text-cyan" style="font-size:.72rem">0${i + 1}</span><p style="margin:.3rem 0 0;font-weight:500">${s}</p></li>`).join("")}
       </ol>
+      <img src="/workflow-3d.jpg" alt="The XenMind workflow in 3D: scenario, agent, checks, comparison" style="display:block;width:100%;max-width:56rem;margin:3rem auto 0;border-radius:.9rem;border:1px solid var(--border);box-shadow:var(--glow)">
       <div style="margin-top:3rem"><a class="btn btn-primary btn-lg" href="#/lab">Open the lab <span class="arr">→</span></a></div>
     </div>
   </section>
@@ -384,6 +385,20 @@ function initWatchPlayer() {
     window.addEventListener("hashchange", () => { const a = document.getElementById("watch-audio"); if (a) a.pause(); });
   }
   show(0); paint();
+}
+/* Hero photo 3D tilt: the photo leans in 3D as the mouse moves over it. */
+function initHeroTilt() {
+  const wrap = document.getElementById("hero-tilt");
+  const img = document.getElementById("hero-img");
+  if (!wrap || !img) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  wrap.addEventListener("mousemove", (e) => {
+    const r = wrap.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    img.style.transform = `rotateX(${(-py * 10).toFixed(2)}deg) rotateY(${(px * 12).toFixed(2)}deg) scale(1.02)`;
+  });
+  wrap.addEventListener("mouseleave", () => { img.style.transform = ""; });
 }
 function initReveal() {
   const els = document.querySelectorAll(".reveal:not(.revealed)");
@@ -1229,6 +1244,7 @@ async function render(soft) {
     fillMarquee();
     initReveal();
     initWatchPlayer();
+    initHeroTilt();
     if (!soft) window.scrollTo(0, 0);
     return;
   }

@@ -204,3 +204,10 @@ def test_llm_test_maps_provider_errors(client, monkeypatch):
     r = client.post("/api/llm/test", json={"provider": "groq"}, headers={"X-LLM-Key": "gsk_bad"})
     assert r.status_code == 401
     assert "rejected" in r.json()["detail"]["message"]
+
+
+def test_groq_default_is_a_live_model():
+    from app.runner.llm_agent import PROVIDERS
+
+    # llama-3.3-70b-versatile was retired for free/Developer keys in Aug 2026.
+    assert PROVIDERS["groq"]["default_model"] == "openai/gpt-oss-20b"

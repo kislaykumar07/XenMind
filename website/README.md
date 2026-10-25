@@ -20,7 +20,7 @@ requirements.txt Pinned deps for the serverless build (incl. psycopg).
 
 - **Real LLM agent mode**: agent versions whose config carries `llm`
   (`provider`, `model`, `system_prompt`, `temperature`) run through a real
-  model via its OpenAI-compatible API (Groq default `llama-3.3-70b-versatile`,
+  model via its OpenAI-compatible API (Groq default `openai/gpt-oss-20b` (llama-3.3-70b-versatile was retired for free keys in Aug 2026),
   OpenAI `gpt-4o-mini`), with the same deterministic mock tools and the same
   assertion engine. Keys are BYOK: the browser sends `X-LLM-Key` per request
   and the server never stores or logs it (server env keys only power

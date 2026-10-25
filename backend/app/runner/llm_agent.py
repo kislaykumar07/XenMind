@@ -17,10 +17,24 @@ import httpx
 from app.runner.mock_agent import AgentRunResult
 from app.runner.mock_tools import ToolError, create_support_ticket, lookup_order, search_help_center
 
+def _provider_message(resp) -> str:
+    """Groq/OpenAI return {"error": {"message": ...}} — show just that message
+    instead of dumping raw JSON at the user."""
+    try:
+        err = resp.json().get("error") or {}
+        if isinstance(err, dict) and err.get("message"):
+            return str(err["message"])
+    except Exception:
+        pass
+    return resp.text[:300]
+
+
 PROVIDERS = {
     "groq": {
         "base_url": "https://api.groq.com/openai/v1",
-        "default_model": "llama-3.3-70b-versatile",
+        # llama-3.3-70b-versatile was shut down for free/Developer keys on
+        # 16 Aug 2026; Groq's own replacement is the gpt-oss family.
+        "default_model": "openai/gpt-oss-20b",
     },
     "openai": {
         "base_url": "https://api.openai.com/v1",
@@ -177,7 +191,7 @@ def run_llm_agent(
                 if resp.status_code == 429:
                     raise LLMError("Provider rate limit hit (429). Wait a minute and retry.")
                 if resp.status_code >= 400:
-                    raise LLMError(f"Provider error {resp.status_code}: {resp.text[:300]}")
+                    raise LLMError(f"Provider error {resp.status_code}: {_provider_message(resp)}")
                 choice = resp.json()["choices"][0]["message"]
                 add("llm_call", "llm_call", {"model": model, "finish_reason": resp.json()["choices"][0].get("finish_reason")})
                 tool_calls = choice.get("tool_calls") or []
@@ -252,7 +266,7 @@ def test_provider(provider: str, model: str | None, api_key: str) -> dict:
     if resp.status_code == 429:
         raise LLMError("Provider rate limit hit (429). Wait a minute and retry.")
     if resp.status_code >= 400:
-        raise LLMError(f"Provider error {resp.status_code}: {resp.text[:300]}")
+        raise LLMError(f"Provider error {resp.status_code}: {_provider_message(resp)}")
     try:
         reply = (resp.json()["choices"][0]["message"].get("content") or "").strip()
     except Exception:

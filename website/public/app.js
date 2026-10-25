@@ -908,7 +908,7 @@ function llmSettingsHTML() {
           <option value="groq" ${saved.provider !== "openai" ? "selected" : ""}>Groq (free tier available)</option>
           <option value="openai" ${saved.provider === "openai" ? "selected" : ""}>OpenAI</option>
         </select></div>
-        <div><label class="f">Model</label><input type="text" id="llm-model" placeholder="llama-3.3-70b-versatile (Groq) or gpt-4o-mini (OpenAI)" value="${esc(saved.model || "")}"/></div>
+        <div><label class="f">Model</label><input type="text" id="llm-model" placeholder="openai/gpt-oss-20b (Groq) or gpt-4o-mini (OpenAI)" value="${esc(saved.model || "")}"/></div>
       </div>
       <div style="margin-top:1rem"><label class="f">API key</label><input type="password" id="llm-key" placeholder="gsk_… (Groq) or sk-… (OpenAI)" value="${esc(getLLMKey())}" autocomplete="off"/></div>
       <p class="muted" style="font-size:.82rem;line-height:1.6">Get a free key at <a class="text-cyan" href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>. The key is saved only in this browser's local storage. Without a key, LLM runs fail with an honest error run — the mock agent always works.</p>
